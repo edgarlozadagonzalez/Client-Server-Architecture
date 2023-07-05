@@ -1,38 +1,38 @@
 package com.mycompany.server;
 
-import com.google.gson.Gson;
+import com.mycompany.interfaces.IServer;
+import com.mycompany.interfaces.IClientHandler;
+import com.mycompany.controller.ServerController;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import com.mycompany.dto.ClientDTO;
-import com.mycompany.dto.Message;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import com.mycompany.interfaces.ICommunicationHandler;
 
-public class Server {
+public class Server implements IServer {
 
-    private int PORT;
     private ServerSocket serverSocket;
-    private final List<ClientDTO> listClientDTO;
-    private ClientCommunicationHandler communicationHandler;
+    private ICommunicationHandler communicationHandler;
+
     private Socket clientSocket;
+    private final ClientPool clientPool;
+    private ServerController serverController;
 
     public Server() {
-        this.listClientDTO = new ArrayList<>();
+        this.clientPool = ClientPool.getInstance();
     }
 
-    public void start(int port) {
+    @Override
+    public void start(int port, int maxclients) {
+        clientPool.createPool(maxclients);
         try {
-            this.PORT = port;
-            serverSocket = new ServerSocket(PORT);
-            System.out.println("Servidor iniciado en el puerto " + PORT);
-            System.out.println("Servidor en espera de clientes...");
+            serverSocket = new ServerSocket(port);
+            serverController.addMessageToBuffer("Servidor iniciado en el puerto " + port);
+            serverController.addMessageToBuffer("Servidor en espera de clientes...");
             waitForClients();
         } catch (IOException ex) {
-            System.out.println("Error al iniciar el servidor: " + ex.getMessage());
+            serverController.addMessageToBuffer("Error al iniciar el servidor: " + ex.getMessage());
             Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
@@ -41,48 +41,57 @@ public class Server {
         while (true) {
             try {
                 clientSocket = serverSocket.accept();
-                communicationHandler = new ClientCommunicationHandler(clientSocket);
-                if (ClientPool.getInstance().hasAvailableClients()) {
-                    System.out.println("El cliente " + clientSocket.getInetAddress().getHostAddress() + " se ha conectado.");
+                communicationHandler = new ClientCommunicationHandler();
+                communicationHandler.setClientSocket(clientSocket);
+                if (clientPool.hasAvailableClients()) {
+                    serverController.addMessageToBuffer("El cliente " + clientSocket.getInetAddress().getHostAddress() + " se ha conectado.");
                     handleClient();
                 } else {
-                    System.out.println("El servidor está lleno. Rechazando la conexión del cliente " + clientSocket.getInetAddress().getHostAddress());
+                    serverController.addMessageToBuffer("El servidor está lleno. Rechazando la conexión del cliente " + clientSocket.getInetAddress().getHostAddress());
                     // Enviar mensaje al cliente indicando que el servidor está lleno
                     communicationHandler.createStreams();
-                    Message message = new Message("_REJECT_","El servidor está lleno. Intente más tarde.");
-                    Gson json = new Gson();
-                    communicationHandler.sendMessage(json.toJson(message));
+                    serverController.sendReject(communicationHandler, "El servidor está lleno. Intente más tarde.");
                     clientSocket.close();
                 }
             } catch (IOException ex) {
-                System.out.println("Error al aceptar el cliente: " + ex.getMessage());
+                serverController.addMessageToBuffer("Error al aceptar el cliente: " + ex.getMessage());
                 Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
     }
-    
-    private void handleClient(){
+
+    private void handleClient() {
         // Obtiene un cliente del pool
-        IClientHandler handler = ClientPool.getInstance().getClient();
-        handler.setCommunicationHandler(communicationHandler);
+        IClientHandler handler = clientPool.getClient();
+        handler.connect(communicationHandler, serverController);
         // Crea un nuevo hilo utilizando el cliente obtenido
         Thread thread = new Thread(handler);
         thread.start();
-        listClientDTO.add(new ClientDTO(clientSocket.getInetAddress().getHostName(), clientSocket.getInetAddress().getHostAddress(), LocalDateTime.now()));
         int threadCount = Thread.activeCount();
-        System.out.println("Cantidad de hilos: " + threadCount);
+        serverController.addMessageToBuffer("Cantidad de hilos: " + threadCount);
     }
 
-    public int getPORT() {
-        return PORT;
+    @Override
+    public void closeServer() {
+        serverController.addMessageToBuffer("Cerrando las conexiones de los clientes...");
+        for (IClientHandler clientHandler : clientPool.getAvailableClients()) {
+            clientHandler.disconnect();
+        }
+        try {
+            serverController.addMessageToBuffer("Cerrando el servidor...");
+            serverSocket.close();
+        } catch (IOException e) {
+            serverController.addMessageToBuffer("Error al cerrar el servidor");
+        }
     }
 
-    public List<ClientDTO> getListClientDTO() {
-        return listClientDTO;
+    @Override
+    public ServerController getServerController() {
+        return serverController;
     }
 
-    public ServerSocket getServerSocket() {
-        return serverSocket;
+    @Override
+    public void setServerController(Object serverController) {
+        this.serverController = (ServerController) serverController;
     }
-
 }

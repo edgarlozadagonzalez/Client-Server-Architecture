@@ -1,17 +1,22 @@
 package com.mycompany.server;
 
+import com.mycompany.interfaces.IClientHandler;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class ClientPool {
 
     private static ClientPool instance;
-    private static final int MAX_CLIENTS = 1; // Define el número máximo de clientes permitidos
     private final List<IClientHandler> availableClients;
 
     private ClientPool() {
         availableClients = new ArrayList<>();
-        for (int i = 0; i < MAX_CLIENTS; i++) {
+    }
+
+    public void createPool(int maxClients) {
+        for (int i = 0; i < maxClients; i++) {
             availableClients.add(createClient());
         }
     }
@@ -37,12 +42,11 @@ public class ClientPool {
             try {
                 wait();
             } catch (InterruptedException e) {
-                System.out.println(e);
+                 Logger.getLogger(ClientPool.class.getName()).log(Level.SEVERE, null, e);
             }
         }
         // Obtén el primer cliente disponible del pool y remuévelo de la lista
-        IClientHandler client = availableClients.remove(0);
-        return client;
+        return availableClients.remove(0);
     }
 
     public synchronized void releaseClient(IClientHandler client) {
@@ -50,4 +54,10 @@ public class ClientPool {
         availableClients.add(client);
         notify();
     }
+
+    public List<IClientHandler> getAvailableClients() {
+        return availableClients;
+    }
+    
+    
 }

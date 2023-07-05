@@ -2,13 +2,46 @@ package com.mycompany.server;
 
 import com.google.gson.Gson;
 import com.mycompany.controller.ServerController;
+import com.mycompany.interfaces.IClientHandler;
 import com.mycompany.dto.Message;
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import com.mycompany.interfaces.ICommunicationHandler;
 
-public class ClientHandler extends MessageProcessor implements IClientHandler {
+public class ClientHandler implements IClientHandler {
 
-    private ClientCommunicationHandler communicationHandler;
-    private Message clientMessage;
+    private MessageProcessor messageProcessor;
+    private ICommunicationHandler communicationHandler;
+    
+    @Override
+    public void connect(ICommunicationHandler comnHandler,Object serverController) {
+        this.communicationHandler = comnHandler;
+        communicationHandler.createStreams();
+        
+        messageProcessor = new MessageProcessor(communicationHandler,(ServerController)serverController);
+        
+        Gson gson = new Gson();
+        String json = gson.toJson(new Message("_ADMITTED_", "¡Has sido admitido en nuestro servidor! ¡Bienvenido!"));
+        messageProcessor.processMessage(json);
+        json = gson.toJson(new Message("_SERVER_POST_MESSAGE_", "Bienvenido al servidor: " + communicationHandler.getClientSocket().getInetAddress().getHostName()));
+        messageProcessor.processMessage(json);
+    }
 
+    @Override
+    public void disconnect() {
+        try {
+            communicationHandler.getClientSocket().close();
+        } catch (IOException ex) {
+            Logger.getLogger(ClientHandler.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        ClientPool.getInstance().releaseClient(this);
+        Gson gson = new Gson();
+        String json = gson.toJson(new Message("_DISCONNECT_", "El cliente "+communicationHandler.getClientSocket().getInetAddress().getHostAddress() + " se ha desconectado."));
+        messageProcessor.processMessage(json);
+    }
+    
+    
     @Override
     public void run() {
         while (true) {
@@ -17,56 +50,7 @@ public class ClientHandler extends MessageProcessor implements IClientHandler {
                 disconnect();
                 break;
             }
-            clientMessage = parsearStringTOMessage(message);
-            processMessage(clientMessage);
+            messageProcessor.processMessage(message);
         }
-    }
-
-    private void disconnect() {
-        ClientPool.getInstance().releaseClient(this);
-    }
-
-    @Override
-    public void setCommunicationHandler(ClientCommunicationHandler communicationHandler) {
-        this.communicationHandler = communicationHandler;
-        communicationHandler.createStreams();
-        clientMessage = new Message("_ADMITTED_","¡Has sido admitido en nuestro servidor! ¡Bienvenido!");
-        sendClientMessage(clientMessage);
-        clientMessage = new Message("_SERVER_POST_MESSAGE_", "Bienvenido al servidor: " + communicationHandler.getClientSocket().getInetAddress().getHostName());
-        sendClientMessage(clientMessage);
-    }
-
-    @Override
-    protected void sendResponse(String request, String content) {
-        Message responseMessage = new Message(request, content);
-        sendClientMessage(responseMessage);
-    }
-
-    @Override
-    protected void sendErrorResponse(String errorMessage) {
-        Message responseMessage = new Message("_ERROR_", errorMessage);
-        sendClientMessage(responseMessage);
-    }
-
-    @Override
-    protected void sendClientMessage(Message message) {
-        Gson gson = new Gson();
-        communicationHandler.sendMessage(gson.toJson(message));
-    }
-
-    @Override
-    protected String getDocumentList() {
-        return ServerController.getInstance().getDocumentListJson();
-    }
-
-    @Override
-    protected String addDocumenToList(String content) {
-        ServerController.getInstance().receiveDocumentsFromClient(content);
-        return "Documento recibido y almacenado en el servidor";
-    }
-
-    @Override
-    protected String getDocument(String content) {
-       return ServerController.getInstance().getDocument(content);
     }
 }

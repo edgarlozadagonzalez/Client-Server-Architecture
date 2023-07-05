@@ -2,47 +2,60 @@ package com.mycompany.server;
 
 import com.google.gson.Gson;
 import com.mycompany.dto.Message;
+import com.mycompany.controller.ServerController;
+import com.mycompany.dto.ClientDTO;
+import com.mycompany.interfaces.ICommunicationHandler;
+import java.time.LocalDateTime;
 
-public abstract class MessageProcessor {
+public class MessageProcessor {
 
-    public void processMessage(Message message) {
+    private Message message;
+    private final ICommunicationHandler communicationHandler;
+    private final ServerController serverController;
+
+    public MessageProcessor(ICommunicationHandler communicationHandler, ServerController serverController) {
+        this.communicationHandler = communicationHandler;
+        this.serverController = serverController;
+    }
+
+    public void processMessage(String msg) {
+        this.message = parsearStringTOMessage(msg);
         String request = message.getRequest();
         String content = message.getContent();
 
         switch (request) {
             case "_CLIENT_GET_DOCUMENT_LIST_": {
-                request = "_SERVER_POST_DOCUMENT_LIST_";
-                content = getDocumentList();
-                sendResponse(request, content);
+                serverController.sendDocumentList(communicationHandler);
                 break;
             }
             case "_CLIENT_POST_DOCUMENT_": {
-                request = "_SERVER_POST_MESSAGE_";
-                content = addDocumenToList(content);
-                sendResponse(request, content);
+                serverController.receiveDocument(communicationHandler, content);
                 break;
             }
             case "_CLIENT_GET_DOCUMENT_": {
-                request = "_SERVER_POST_DOCUMENT_";
-                System.out.println("recibida peticion");
-                content = getDocument(content);
-                sendResponse(request, content);
-                System.out.println("documento enviado");
+                serverController.sendDocument(communicationHandler, content);
+                break;
+            }
+            case "_ADMITTED_": {
+                serverController.sendMessage(communicationHandler, msg);
+                serverController.addClientList(new ClientDTO(communicationHandler.getClientSocket().getInetAddress().getHostName(), communicationHandler.getClientSocket().getInetAddress().getHostAddress(), LocalDateTime.now()));
+                break;
+            }
+            case "_SERVER_POST_MESSAGE_": {
+                serverController.sendMessage(communicationHandler, msg);
+                break;
+            }
+            case "_DISCONNECT_": {
+                serverController.addMessageToBuffer(content);
                 break;
             }
             default:
                 // Request desconocido, enviar respuesta de error
-                sendErrorResponse("Unknown request: " + request);
+                String cont = "Unknown request: " + request;
+                serverController.sendMessage(communicationHandler, cont);
                 break;
         }
     }
-
-    protected abstract String getDocumentList();
-    protected abstract String addDocumenToList(String content);
-    protected abstract String getDocument(String content);
-    protected abstract void sendResponse(String request, String content);
-    protected abstract void sendErrorResponse(String errorMessage);
-    protected abstract void sendClientMessage(Message message);
 
     protected Message parsearStringTOMessage(String jsonMessage) {
         Gson gson = new Gson();

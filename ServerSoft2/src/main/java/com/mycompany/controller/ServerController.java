@@ -2,71 +2,91 @@ package com.mycompany.controller;
 
 import com.mycompany.dto.ClientDTO;
 import com.mycompany.dto.DocumentDTO;
-import com.mycompany.server.Server;
-import com.mycompany.service.DocumentService;
-import com.mycompany.view.ServerConsole;
-import java.io.IOException;
+import com.mycompany.interfaces.IServer;
+import com.mycompany.interfaces.IView;
+import com.mycompany.interfaces.IServerServices;
+import com.mycompany.interfaces.ICommunicationHandler;
+import com.mycompany.utils.ClientUtils;
+import com.mycompany.utils.DocumentUtils;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
 
 public class ServerController {
 
-    private final Server server;
-    private final DocumentService documentService;
-    private static ServerController instance;
-
-    private ServerController() {
-        this.documentService = new DocumentService();
-        this.server = new Server();
+    private final IServerServices serverServices;
+    private final IView view;
+    private final IServer server;
+    private final ClientUtils clientUtils;
+    private final DocumentUtils documentUtils;
+    
+    public ServerController(IServer server, IView view, IServerServices serverServices) {
+        this.server = server;
+        this.view = view;
+        this.serverServices = serverServices;
+        this.clientUtils = new ClientUtils();
+        this.documentUtils = new DocumentUtils();
     }
 
-    public static ServerController getInstance() {
-        if (instance == null) {
-            instance = new ServerController();
-        }
-        return instance;
+    public void startServer(int port, int maxClients) {
+        getDocumentsFolder();
+        server.start(port, maxClients);
     }
 
-    public void initServer(int port) {
-        documentService.getDocumentsInFolder();
-        server.start(port);
+    public void addMessageToBuffer(String message) {
+        view.displayMessage(message);
     }
 
-    public void addMessageToBuffer(String mensaje) {
-        ServerConsole.mostrarMensaje(mensaje);
-    }
-
-    public void saveDocument(DocumentDTO documentDTO) {
-        //documentService.saveDocument(documentDTO);
-        ServerConsole.listarClientes(listClientDTO());
-        ServerConsole.listarDocumentos((listDocumentDTO()));
-        addMessageToBuffer("Documento recibido y almacenado en el servidor");
-    }
-
-    public void receiveDocumentsFromClient(String jsonDocument){
-        try {
-            documentService.saveDocument( jsonDocument);
-        } catch (IOException ex) {
-            System.out.println(ex);
-            Logger.getLogger(ServerController.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }
-
-    public String getDocumentListJson() {
-        return documentService.convertDocumentListToJson(listDocumentDTO());
+    public void viewRefreshDocumentsList() {
+        view.listDocuments(getDocumentsList());
     }
     
-    public String getDocument(String content){ 
-        return documentService.loadDocument(content);
+    public void viewRefreshClientList(){
+        view.listClients(getClientsList());
     }
 
-    public List<ClientDTO> listClientDTO() {
-        return server.getListClientDTO();
+    public void receiveDocument(ICommunicationHandler communicationHandler, String jsonDocument) {
+        String message = serverServices.receiveDocument(communicationHandler, jsonDocument,documentUtils);
+        addMessageToBuffer(message);
+        viewRefreshDocumentsList();
     }
 
-    public List<DocumentDTO> listDocumentDTO() {
-        return documentService.getDocumentsList();
+    public void sendDocumentList(ICommunicationHandler communicationHandler) {
+        String message = serverServices.sendDocumentList(communicationHandler,documentUtils);
+        addMessageToBuffer(message);
     }
 
+    public void sendDocument(ICommunicationHandler communicationHandler, String content) {
+        String message = serverServices.sendDocument(communicationHandler, content,documentUtils);
+        addMessageToBuffer(message);
+    }
+
+    public void sendMessage(ICommunicationHandler communicationHandler, String json) {
+        serverServices.sendMessage(communicationHandler, json);
+    }
+
+    public void sendReject(ICommunicationHandler communicationHandler, String msg) {
+        serverServices.sendReject(communicationHandler, msg);
+    }
+
+    private void getDocumentsFolder() {
+        documentUtils.getDocumentsInFolder();
+    }
+    
+    private List<DocumentDTO> getDocumentsList(){
+        return documentUtils.getDocumentsList();
+    }
+    
+    
+    public void addClientList(ClientDTO client){
+        clientUtils.addClient(client);
+        viewRefreshClientList();
+    }
+    
+    public List<ClientDTO> getClientsList(){
+        return clientUtils.getClientsList();
+    }
+    
+    public void closeServer() {
+        server.closeServer();
+    }
 }

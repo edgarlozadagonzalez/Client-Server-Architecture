@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<catalog xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog" prefer="system">
+    <system systemId="http://localhost:29167/FileWebService/FileWebServiceImplService?wsdl" uri="wsdl/localhost_29167/FileWebService/FileWebServiceImplService.wsdl"/>
+    <system systemId="http://localhost:29167/FileWebService/FileWebServiceImplService?xsd=1" uri="wsdl/localhost_29167/FileWebService/FileWebServiceImplService.xsd_1.xsd"/>
+</catalog>

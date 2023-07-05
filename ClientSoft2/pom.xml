@@ -9,10 +9,23 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
-        <exec.mainClass>com.mycompany.view.ClientConsole</exec.mainClass>
+        <exec.mainClass>com.mycompany.FileClient.view.ClientConsole</exec.mainClass>
     </properties>
     <name>ClientSoft2</name>
     <build>
+        <resources>
+            <resource>
+                <targetPath>META-INF</targetPath>
+                <directory>src</directory>
+                <includes>
+                    <include>jax-ws-catalog.xml</include>
+                    <include>wsdl/**</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
@@ -28,12 +41,31 @@
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
-                            <mainClass>com.mycompany.view.ClientConsole</mainClass>
+                            <mainClass>com.mycompany.FileClient.view.ClientConsole</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>
                         <descriptorRef>jar-with-dependencies</descriptorRef>
                     </descriptorRefs>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.jvnet.jax-ws-commons</groupId>
+                <artifactId>jaxws-maven-plugin</artifactId>
+                <version>2.3</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>javax.xml</groupId>
+                        <artifactId>webservices-api</artifactId>
+                        <version>2.0</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <sourceDestDir>${project.build.directory}/generated-sources/jaxws-wsimport</sourceDestDir>
+                    <xnocompile>true</xnocompile>
+                    <verbose>true</verbose>
+                    <extension>true</extension>
+                    <catalog>${basedir}/src/jax-ws-catalog.xml</catalog>
                 </configuration>
             </plugin>
         </plugins>
