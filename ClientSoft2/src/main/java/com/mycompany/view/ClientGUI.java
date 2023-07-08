@@ -211,7 +211,11 @@ public class ClientGUI extends javax.swing.JFrame implements CommunicationListen
 
 
     private void ButtonRecibirActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ButtonRecibirActionPerformed
-        clientController.requestDownloadDocument(selectedDocument);
+        if (selectedDocument != null) {
+            clientController.requestDownloadDocument(selectedDocument);
+        } else {
+            JOptionPane.showMessageDialog(null, "Seleccione un archivo.", "Guardar archivo", JOptionPane.INFORMATION_MESSAGE);
+        }
     }//GEN-LAST:event_ButtonRecibirActionPerformed
 
     private void ButtonEnviarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ButtonEnviarActionPerformed
