@@ -9,12 +9,13 @@ import java.net.Socket;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import com.mycompany.interfaces.ICommunicationHandler;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Server implements IServer {
 
     private ServerSocket serverSocket;
     private ICommunicationHandler communicationHandler;
-
     private Socket clientSocket;
     private final ClientPool clientPool;
     private ServerController serverController;
@@ -54,7 +55,7 @@ public class Server implements IServer {
                     clientSocket.close();
                 }
             } catch (IOException ex) {
-                serverController.addMessageToBuffer("Error al aceptar el cliente: " + ex.getMessage());
+                serverController.addMessageToBuffer( ex.getMessage());
                 Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
@@ -74,7 +75,8 @@ public class Server implements IServer {
     @Override
     public void closeServer() {
         serverController.addMessageToBuffer("Cerrando las conexiones de los clientes...");
-        for (IClientHandler clientHandler : clientPool.getAvailableClients()) {
+        List<IClientHandler> takenClients = new ArrayList<>(clientPool.getTakenClients());
+        for (IClientHandler clientHandler : takenClients) {
             clientHandler.disconnect();
         }
         try {

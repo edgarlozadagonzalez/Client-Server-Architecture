@@ -5,7 +5,6 @@ import com.mycompany.dto.Message;
 import com.mycompany.controller.ServerController;
 import com.mycompany.dto.ClientDTO;
 import com.mycompany.interfaces.ICommunicationHandler;
-import java.time.LocalDateTime;
 
 public class MessageProcessor {
 
@@ -38,7 +37,7 @@ public class MessageProcessor {
             }
             case "_ADMITTED_": {
                 serverController.sendMessage(communicationHandler, msg);
-                serverController.addClientList(new ClientDTO(communicationHandler.getClientSocket().getInetAddress().getHostName(), communicationHandler.getClientSocket().getInetAddress().getHostAddress(), LocalDateTime.now()));
+                serverController.addClientList(new ClientDTO(communicationHandler.getClientSocket()));
                 break;
             }
             case "_SERVER_POST_MESSAGE_": {

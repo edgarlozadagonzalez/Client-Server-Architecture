@@ -9,7 +9,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
-        <exec.mainClass>com.mycompany.FileClient.view.ClientConsole</exec.mainClass>
+        <exec.mainClass>com.mycompany.main.Main</exec.mainClass>
     </properties>
     <name>ClientSoft2</name>
     <build>
@@ -41,7 +41,7 @@
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
-                            <mainClass>com.mycompany.FileClient.view.ClientConsole</mainClass>
+                            <mainClass>com.mycompany.main.Main</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>

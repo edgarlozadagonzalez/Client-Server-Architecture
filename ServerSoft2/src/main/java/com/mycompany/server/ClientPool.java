@@ -3,16 +3,17 @@ package com.mycompany.server;
 import com.mycompany.interfaces.IClientHandler;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class ClientPool {
 
     private static ClientPool instance;
     private final List<IClientHandler> availableClients;
+    private final List<IClientHandler> takenClients;
 
     private ClientPool() {
         availableClients = new ArrayList<>();
+        takenClients = new ArrayList<>();
+
     }
 
     public void createPool(int maxClients) {
@@ -37,27 +38,20 @@ public class ClientPool {
     }
 
     public synchronized IClientHandler getClient() {
-        if (!hasAvailableClients()) {
-            // Si no hay clientes disponibles en el pool, esperamos hasta que haya uno disponible
-            try {
-                wait();
-            } catch (InterruptedException e) {
-                 Logger.getLogger(ClientPool.class.getName()).log(Level.SEVERE, null, e);
-            }
-        }
         // Obtén el primer cliente disponible del pool y remuévelo de la lista
-        return availableClients.remove(0);
+        IClientHandler client = availableClients.remove(0);
+        takenClients.add(client);
+        return client;
     }
 
     public synchronized void releaseClient(IClientHandler client) {
         // Agrega el cliente devuelto al pool y notifica a los hilos en espera
+        takenClients.remove(client);
         availableClients.add(client);
-        notify();
     }
 
-    public List<IClientHandler> getAvailableClients() {
-        return availableClients;
+    public List<IClientHandler> getTakenClients() {
+        return takenClients;
     }
-    
-    
+
 }

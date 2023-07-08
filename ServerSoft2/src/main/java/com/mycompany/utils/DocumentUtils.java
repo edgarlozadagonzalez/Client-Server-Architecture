@@ -19,7 +19,7 @@ import java.util.logging.Logger;
 public class DocumentUtils {
 
     private final List<DocumentDTO> documentsDTO;
-    private static final String FOLDER_PATH = "../Documents";
+    private static final String FOLDER_PATH = "../../Documents";
     
     
     public DocumentUtils() {

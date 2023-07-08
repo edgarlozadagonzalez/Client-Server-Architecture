@@ -1,5 +1,6 @@
 package com.mycompany.dto;
 
+import java.net.Socket;
 import java.time.LocalDateTime;
 
 public class ClientDTO {
@@ -7,11 +8,11 @@ public class ClientDTO {
     private final String name;
     private final String ipAddress;
     private final LocalDateTime dateTime;
-
-    public ClientDTO(String name, String ipAddress, LocalDateTime dateTime) {
-        this.name = name;
-        this.ipAddress = ipAddress;
-        this.dateTime = dateTime;
+    
+    public ClientDTO(Socket clientSocket) {
+        this.name = clientSocket.getInetAddress().getHostName();
+        this.ipAddress = clientSocket.getInetAddress().getHostAddress();
+        this.dateTime =  LocalDateTime.now();
     }
 
     public String getName() {
@@ -25,5 +26,4 @@ public class ClientDTO {
     public LocalDateTime getDateTime() {
         return dateTime;
     }
-    
 }
