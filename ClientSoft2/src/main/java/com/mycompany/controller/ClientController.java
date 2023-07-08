@@ -65,8 +65,8 @@ public class ClientController {
         client.sendRequest("_CLIENT_GET_DOCUMENT_", jsonDocument);
     }
 
-    public void disconnet(DocumentDTO documentDTO) {
-        client.sendRequest("_DISCONNECT_","");
+    public void disconnet() {
+        client.disconnect();
     }
 
     public void setAvailableDocuments(String jsonDocumentList) {

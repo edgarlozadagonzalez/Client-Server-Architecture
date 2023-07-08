@@ -6,6 +6,7 @@ import com.mycompany.dto.Message;
 
 public abstract class MessageProcessor {
 
+    
     public void processMessage(String msg) {
         Message message = parsearStringTOServerMessage(msg);
         String request = message.getRequest();
@@ -48,9 +49,6 @@ public abstract class MessageProcessor {
             case "_ADMITTED_": {
                 ClientController.getInstance().setConnectionAdmitted(content);
                 break;
-            }
-            case "_DISCONNECT_":{
-                sendServerMessage(message);
             }
             default:
                 sendServerMessage( new Message("_ERROR_", "Unknown request: " + request));

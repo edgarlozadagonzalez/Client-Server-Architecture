@@ -4,6 +4,8 @@ import com.google.gson.Gson;
 import com.mycompany.dto.Message;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class Client extends MessageProcessor implements Runnable {
 
@@ -36,13 +38,22 @@ public class Client extends MessageProcessor implements Runnable {
 
     public void sendRequest(String request, String content) {
         Gson gson = new Gson();
-        processMessage(gson.toJson(new Message(request, content)));
+        String json = gson.toJson(new Message(request, content));
+        processMessage(json);
     }
 
     public String getIpClient() {
         return serverSocket.getLocalAddress().getHostAddress();
     }
-
+    
+    public void disconnect(){
+        try {
+            serverSocket.close();
+        } catch (IOException ex) {
+            Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+    }
     @Override
     protected void sendServerMessage(Message message) {
          Gson gson = new Gson();
